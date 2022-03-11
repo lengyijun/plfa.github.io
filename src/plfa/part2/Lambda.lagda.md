@@ -141,6 +141,12 @@ plus = μ "+" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
          case ` "m"
            [zero⇒ ` "n"
            |suc "m" ⇒ `suc (` "+" · ` "m" · ` "n") ]
+           
+id : Term
+id = ƛ "n" ⇒ ` "n"
+
+omega : Term
+omega =  ƛ "n" ⇒ ` "n" · ` "n"
 ```
 The recursive definition of addition is similar to our original
 definition of `_+_` for naturals, as given in
@@ -173,6 +179,7 @@ plusᶜ =  ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒
 
 sucᶜ : Term
 sucᶜ = ƛ "n" ⇒ `suc (` "n")
+
 ```
 The Church numeral for two takes two arguments `s` and `z`
 and applies `s` twice to `z`.
@@ -198,7 +205,8 @@ two natural numbers.  Your definition may use `plus` as
 defined earlier.
 
 ```
--- Your code goes here
+mul : Term
+mul = μ "*" ⇒ (ƛ "a" ⇒ (ƛ "b" ⇒  case ` "a" [zero⇒ ` "b"  |suc "a" ⇒ plus · ` "b" · (` "*" · ` "a" · ` "b") ]))
 ```
 
 
@@ -210,7 +218,9 @@ definition may use `plusᶜ` as defined earlier (or may not
 — there are nice definitions both ways).
 
 ```
--- Your code goes here
+mulᶜ : Term
+mulᶜ =  ƛ "m" ⇒ ƛ "n" ⇒ ƛ "s" ⇒ ƛ "z" ⇒
+         ` "m" ·  (` "n" · ` "s" ) · ` "z"
 ```
 
 
@@ -846,6 +856,10 @@ _ =
 
 Here is a sample reduction demonstrating that two plus two is four:
 ```
+
+_ : omega · id  —↠ id
+_ = _ —→⟨  β-ƛ V-ƛ ⟩ _ —→⟨ ( β-ƛ V-ƛ) ⟩ (id ∎)
+
 _ : plus · two · two —↠ `suc `suc `suc `suc `zero
 _ =
   begin
@@ -1260,6 +1274,13 @@ Here are the typings corresponding to computing two plus two:
 
 ⊢2+2 : ∅ ⊢ plus · two · two ⦂ `ℕ
 ⊢2+2 = ⊢plus · ⊢two · ⊢two
+
+⊢id1 : ∀ {Γ} → Γ ⊢ id  ⦂ `ℕ ⇒ `ℕ
+⊢id1  = ⊢ƛ (⊢` Z)
+
+⊢id2 : ∀ {Γ} → Γ ⊢ id  ⦂ ( `ℕ ⇒ `ℕ ) ⇒ ( `ℕ ⇒ `ℕ )
+⊢id2  = ⊢ƛ (⊢` Z)
+
 ```
 In contrast to our earlier examples, here we have typed `two` and `plus`
 in an arbitrary context rather than the empty context; this makes it easy
@@ -1396,7 +1417,11 @@ Using the term `mul` you defined earlier, write out the derivation
 showing that it is well typed.
 
 ```
--- Your code goes here
+⊢mul : ∀ {Γ} → Γ ⊢ mul ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ
+⊢mul {Γ} = ⊢μ (⊢ƛ (⊢ƛ (⊢case (⊢` (S′ Z)) (⊢` Z) ((⊢plus · ⊢` (S′ Z)) · (((⊢` (S′ (S′ (S′ Z)))) · ⊢` Z ) · ⊢` (S′ Z))))))
+
+⊢2*2 : ∅ ⊢ mul · two · two ⦂ `ℕ
+⊢2*2 = ⊢mul · ⊢two · ⊢two
 ```
 
 
@@ -1406,7 +1431,11 @@ Using the term `mulᶜ` you defined earlier, write out the derivation
 showing that it is well typed.
 
 ```
--- Your code goes here
+⊢mulᶜ : ∀ {Γ A} → Γ  ⊢ mulᶜ ⦂ Ch A ⇒ Ch A ⇒ Ch A
+⊢mulᶜ = ⊢ƛ (⊢ƛ (⊢ƛ (⊢ƛ (((⊢` (S′ (S′ (S′ Z)))) · ((⊢` (S′ (S′ Z))) · ⊢` (S′ Z))) · ⊢` Z))))
+
+⊢2*2ᶜ : ∅ ⊢ mulᶜ · twoᶜ · twoᶜ · sucᶜ · `zero ⦂ `ℕ
+⊢2*2ᶜ = ⊢mulᶜ · ⊢twoᶜ · ⊢twoᶜ · ⊢sucᶜ · ⊢zero
 ```
 
 

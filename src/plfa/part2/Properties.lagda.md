@@ -269,8 +269,10 @@ or introduce subsidiary functions.
 Instead of defining a data type for `Progress M`, we could
 have formulated progress using disjunction and existentials:
 ```
+{-
 postulate
   progress′ : ∀ M {A} → ∅ ⊢ M ⦂ A → Value M ⊎ ∃[ N ](M —→ N)
+  -}
 ```
 This leads to a less perspicuous proof.  Instead of the mnemonic `done`
 and `step` we use `inj₁` and `inj₂`, and the term `N` is no longer
@@ -284,7 +286,23 @@ determine its bound variable and body, `ƛ x ⇒ N`, so we can show that
 Show that `Progress M` is isomorphic to `Value M ⊎ ∃[ N ](M —→ N)`.
 
 ```
--- Your code goes here
+progressiso1 : ∀{M} -> Progress M -> Value M ⊎ ∃[ N ](M —→ N)
+progressiso1 {M} (step {N} x) = inj₂ ⟨ N , x ⟩
+progressiso1 (done x) = inj₁ x
+
+progressiso2 :  ∀{M} -> Value M ⊎ ∃[ N ](M —→ N) -> Progress M
+progressiso2 (inj₁ x) = done x
+progressiso2 (inj₂ ⟨ fst , snd ⟩) = step snd
+
+{-
+progressiso3 : ∀{M} -> progressiso1 (progressiso2 M) ≡ M
+progressiso3 {inj₁ x} = refl
+progressiso3 {inj₂ y} = refl
+
+progressiso4 : ∀{M} -> progressiso2 (progressiso1 M) ≡ M
+progressiso4 {step x} = refl
+progressiso4 {done x} = refl
+-}
 ```
 
 #### Exercise `progress′` (practice)
@@ -293,7 +311,22 @@ Write out the proof of `progress′` in full, and compare it to the
 proof of `progress` above.
 
 ```
--- Your code goes here
+progress′ : ∀ M {A} → ∅ ⊢ M ⦂ A → Value M ⊎ ∃[ N ](M —→ N)
+progress′ .(ƛ _ ⇒ _) {.(_ ⇒ _)} (⊢ƛ x) = inj₁ V-ƛ
+progress′ .(L · M) {A} (_·_ {L = L} {M} {A₁} x x₁) with progress′ L x
+progress′ .(L · M) {A} (_·_ {L = L} {M} {A₁} x x₁) | inj₁ x₂ with progress′ M x₁
+progress′ .((ƛ _ ⇒ _) · M) {A} (_·_ {L = .(ƛ _ ⇒ _)} {M} {A₁} (⊢ƛ x) x₁) | inj₁ x₂ | inj₁ x₃ = inj₂ ⟨ _ ,    β-ƛ x₃ ⟩
+progress′ .(L · M) {A} (_·_ {L = L} {M} {A₁} x x₁) | inj₁ x₂ | inj₂ ⟨ fst , snd ⟩ = inj₂ ⟨ _ ,   ξ-·₂ x₂ snd ⟩
+progress′ .(L · M) {A} (_·_ {L = L} {M} {A₁} x x₁) | inj₂ ⟨ fst , snd ⟩ = inj₂ ⟨  fst · M , ξ-·₁ snd ⟩
+progress′ .`zero {.`ℕ} ⊢zero = inj₁ V-zero
+progress′ .(`suc M) {.`ℕ} (⊢suc {M = M} x) with progress′ M x
+progress′ .(`suc M) {.`ℕ} (⊢suc {M = M} x) | inj₁ x₁ = inj₁ (V-suc x₁)
+progress′ .(`suc M) {.`ℕ} (⊢suc {M = M} x) | inj₂ ⟨ fst , snd ⟩ = inj₂ ⟨ _ , ( ξ-suc snd) ⟩
+progress′ .(case L [zero⇒ M |suc _ ⇒ N ]) {A} (⊢case {L = L} {M} {N = N} x x₁ x₂) with progress′ L x
+progress′ .(case `zero [zero⇒ M |suc _ ⇒ N ]) {A} (⊢case {L = .`zero} {M} {N = N} x x₁ x₂) | inj₁ V-zero = inj₂ ⟨ _ , β-zero ⟩
+progress′ .(case `suc _ [zero⇒ M |suc _ ⇒ N ]) {A} (⊢case {L = .(`suc _)} {M} {N = N} x x₁ x₂) | inj₁ (V-suc x₃) = inj₂ ⟨ _ , (β-suc x₃) ⟩
+progress′ .(case L [zero⇒ M |suc _ ⇒ N ]) {A} (⊢case {L = L} {M} {N = N} x x₁ x₂) | inj₂ ⟨ fst , snd ⟩ = inj₂ ⟨ _ , (ξ-case snd) ⟩
+progress′ .(μ _ ⇒ M) {A} (⊢μ {M = M} x) = inj₂ ⟨ _ , β-μ  ⟩
 ```
 
 #### Exercise `value?` (practice)
@@ -301,8 +334,10 @@ proof of `progress` above.
 Combine `progress` and `—→¬V` to write a program that decides
 whether a well-typed term is a value:
 ```
-postulate
-  value? : ∀ {A M} → ∅ ⊢ M ⦂ A → Dec (Value M)
+value? : ∀ {A M} → ∅ ⊢ M ⦂ A → Dec (Value M)
+value? x with progress x
+value? x | step x₁ = no (—→¬V x₁)
+value? x | done x₁ = yes x₁
 ```
 
 ## Prelude to preservation
@@ -739,7 +774,14 @@ defined by mutual recursion with the proof that substitution
 preserves types.
 
 ```
--- Your code goes here
+{-
+subst′ : ∀ {Γ x N V A B}
+  → ∅ ⊢ V ⦂ A
+  → Γ , x ⦂ A ⊢ N ⦂ B
+    --------------------
+  → Γ ⊢ N [ x := V ]′ ⦂ B
+subst′ = ?
+-}
 ```
 
 
@@ -754,17 +796,17 @@ preserve : ∀ {M N A}
   → M —→ N
     ----------
   → ∅ ⊢ N ⦂ A
-preserve (⊢` ())
-preserve (⊢ƛ ⊢N)                 ()
-preserve (⊢L · ⊢M)               (ξ-·₁ L—→L′)     =  (preserve ⊢L L—→L′) · ⊢M
-preserve (⊢L · ⊢M)               (ξ-·₂ VL M—→M′)  =  ⊢L · (preserve ⊢M M—→M′)
-preserve ((⊢ƛ ⊢N) · ⊢V)          (β-ƛ VV)         =  subst ⊢V ⊢N
-preserve ⊢zero                   ()
-preserve (⊢suc ⊢M)               (ξ-suc M—→M′)    =  ⊢suc (preserve ⊢M M—→M′)
-preserve (⊢case ⊢L ⊢M ⊢N)        (ξ-case L—→L′)   =  ⊢case (preserve ⊢L L—→L′) ⊢M ⊢N
-preserve (⊢case ⊢zero ⊢M ⊢N)     (β-zero)         =  ⊢M
-preserve (⊢case (⊢suc ⊢V) ⊢M ⊢N) (β-suc VV)       =  subst ⊢V ⊢N
-preserve (⊢μ ⊢M)                 (β-μ)            =  subst (⊢μ ⊢M) ⊢M
+preserve (⊢` x) ()
+preserve (⊢ƛ x) ()
+preserve (x · x₁) (ξ-·₁ x₂) = (preserve x x₂) · x₁
+preserve (x · x₁) (ξ-·₂ x₂ x₃) = x · (preserve x₁ x₃)
+preserve (⊢ƛ x · x₁) (β-ƛ x₂) = subst x₁ x
+preserve ⊢zero ()
+preserve (⊢suc x) (ξ-suc x₁) = ⊢suc (preserve x x₁)
+preserve (⊢case x x₁ x₂) (ξ-case x₃) = ⊢case (preserve x x₃) x₁ x₂
+preserve (⊢case x x₁ x₂) β-zero = x₁
+preserve (⊢case (⊢suc x) x₁ x₂) (β-suc x₃) = subst x x₂
+preserve (⊢μ x) β-μ = subst (⊢μ x) x
 ```
 The proof never mentions the types of `M` or `N`,
 so in what follows we choose type name as convenient.
@@ -992,6 +1034,7 @@ writing `twoᶜ` and `sucᶜ` in place of their expansions.
 
 Next, we show two plus two is four:
 ```
+{-
 _ : eval (gas 100) ⊢2+2 ≡
   steps
    ((μ "+" ⇒
@@ -1151,12 +1194,14 @@ _ : eval (gas 100) ⊢2+2 ≡
    ∎)
    (done (V-suc (V-suc (V-suc (V-suc V-zero)))))
 _ = refl
+-}
 ```
 Again, the derivation in the previous chapter was derived by
 editing the above.
 
 Similarly, we can evaluate the corresponding term for Church numerals:
 ```
+{-
 _ : eval (gas 100) ⊢2+2ᶜ ≡
   steps
    ((ƛ "m" ⇒
@@ -1220,6 +1265,7 @@ _ : eval (gas 100) ⊢2+2ᶜ ≡
    ∎)
    (done (V-suc (V-suc (V-suc (V-suc V-zero)))))
 _ = refl
+-}
 ```
 And again, the example in the previous section was derived by editing the
 above.
@@ -1229,7 +1275,73 @@ above.
 Using the evaluator, confirm that two times two is four.
 
 ```
--- Your code goes here
+{-
+_ :  eval (gas 100 ) ⊢2*2ᶜ ≡ steps ((ƛ "m" ⇒
+  (ƛ "n" ⇒ (ƛ "s" ⇒ (ƛ "z" ⇒ ` "m" · (` "n" · ` "s") · ` "z"))))
+ · (ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z")))
+ · (ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z")))
+ · (ƛ "n" ⇒ `suc ` "n")
+ · `zero
+ —→⟨ ξ-·₁ (ξ-·₁ (ξ-·₁ (β-ƛ V-ƛ))) ⟩
+ (ƛ "n" ⇒
+  (ƛ "s" ⇒
+   (ƛ "z" ⇒
+    (ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z"))) · (` "n" · ` "s") ·
+    ` "z")))
+ · (ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z")))
+ · (ƛ "n" ⇒ `suc ` "n")
+ · `zero
+ —→⟨ ξ-·₁ (ξ-·₁ (β-ƛ V-ƛ)) ⟩
+ (ƛ "s" ⇒
+  (ƛ "z" ⇒
+   (ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z"))) ·
+   ((ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z"))) · ` "s")
+   · ` "z"))
+ · (ƛ "n" ⇒ `suc ` "n")
+ · `zero
+ —→⟨ ξ-·₁ (β-ƛ V-ƛ) ⟩
+ (ƛ "z" ⇒
+  (ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z"))) ·
+  ((ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z"))) ·
+   (ƛ "n" ⇒ `suc ` "n"))
+  · ` "z")
+ · `zero
+ —→⟨ β-ƛ V-zero ⟩
+ (ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z"))) ·
+ ((ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z"))) ·
+  (ƛ "n" ⇒ `suc ` "n"))
+ · `zero
+ —→⟨ ξ-·₁ (ξ-·₂ V-ƛ (β-ƛ V-ƛ)) ⟩
+ (ƛ "s" ⇒ (ƛ "z" ⇒ ` "s" · (` "s" · ` "z"))) ·
+ (ƛ "z" ⇒ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · ` "z"))
+ · `zero
+ —→⟨ ξ-·₁ (β-ƛ V-ƛ) ⟩
+ (ƛ "z" ⇒
+  (ƛ "z" ⇒ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · ` "z")) ·
+  ((ƛ "z" ⇒ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · ` "z")) ·
+   ` "z"))
+ · `zero
+ —→⟨ β-ƛ V-zero ⟩
+ (ƛ "z" ⇒ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · ` "z")) ·
+ ((ƛ "z" ⇒ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · ` "z")) ·
+  `zero)
+ —→⟨ ξ-·₂ V-ƛ (β-ƛ V-zero) ⟩
+ (ƛ "z" ⇒ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · ` "z")) ·
+ ((ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · `zero))
+ —→⟨ ξ-·₂ V-ƛ (ξ-·₂ V-ƛ (β-ƛ V-zero)) ⟩
+ (ƛ "z" ⇒ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · ` "z")) ·
+ ((ƛ "n" ⇒ `suc ` "n") · `suc `zero)
+ —→⟨ ξ-·₂ V-ƛ (β-ƛ (V-suc V-zero)) ⟩
+ (ƛ "z" ⇒ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · ` "z")) ·
+ `suc (`suc `zero)
+ —→⟨ β-ƛ (V-suc (V-suc V-zero)) ⟩
+ (ƛ "n" ⇒ `suc ` "n") · ((ƛ "n" ⇒ `suc ` "n") · `suc (`suc `zero))
+ —→⟨ ξ-·₂ V-ƛ (β-ƛ (V-suc (V-suc V-zero))) ⟩
+ (ƛ "n" ⇒ `suc ` "n") · `suc (`suc (`suc `zero)) —→⟨
+ β-ƛ (V-suc (V-suc (V-suc V-zero))) ⟩
+ `suc (`suc (`suc (`suc `zero))) ∎) (done (V-suc (V-suc (V-suc (V-suc V-zero)))))
+_ = refl
+-}
 ```
 
 
@@ -1255,7 +1367,12 @@ Find two counter-examples to subject expansion, one
 with case expressions and one not involving case expressions.
 
 ```
--- Your code goes here
+{-
+case zero [zero ⇒ zero |suc a ⇒ λ x ⇒ zero ]
+-}
+{-
+(λ x . x x )(λ x . x)
+-}
 ```
 
 
@@ -1275,33 +1392,37 @@ Stuck M  =  Normal M × ¬ Value M
 
 Using progress, it is easy to show that no well-typed term is stuck:
 ```
-postulate
-  unstuck : ∀ {M A}
-    → ∅ ⊢ M ⦂ A
+unstuck : ∀ {M A}
+   → ∅ ⊢ M ⦂ A
       -----------
-    → ¬ (Stuck M)
+   → ¬ (Stuck M)
+unstuck x ⟨ fst , snd ⟩ with progress x
+unstuck x ⟨ fst , snd ⟩ | step x₁ = fst x₁
+unstuck x ⟨ fst , snd ⟩ | done x₁ = snd x₁
 ```
 
 Using preservation, it is easy to show that after any number of steps,
 a well-typed term remains well typed:
 ```
-postulate
-  preserves : ∀ {M N A}
+preserves : ∀ {M N A}
     → ∅ ⊢ M ⦂ A
     → M —↠ N
       ---------
     → ∅ ⊢ N ⦂ A
+preserves x (_ ∎) = x
+preserves x (_ —→⟨ x₁ ⟩ x₂) = preserves (preserve x x₁)  x₂
 ```
 
 An easy consequence is that starting from a well-typed term, taking
 any number of reduction steps leads to a term that is not stuck:
 ```
-postulate
-  wttdgs : ∀ {M N A}
+wttdgs : ∀ {M N A}
     → ∅ ⊢ M ⦂ A
     → M —↠ N
       -----------
     → ¬ (Stuck N)
+wttdgs x (_ ∎) y = unstuck x y
+wttdgs x (_ —→⟨ x₁ ⟩ x₂) y = wttdgs ( preserve x x₁ )  x₂ y
 ```
 Felleisen and Wright, who introduced proofs via progress and
 preservation, summarised this result with the slogan _well-typed terms
@@ -1315,16 +1436,18 @@ showed _well-typed terms don't go wrong_.)
 Give an example of an ill-typed term that does get stuck.
 
 ```
--- Your code goes here
+stuckterm : Term
+stuckterm = ` "x"  · ` "x"
+
+_ : Stuck stuckterm
+_ = ⟨ (λ { (ξ-·₁ ())  ; (ξ-·₂ () x₁) } ) , (λ { () } ) ⟩
+
 ```
 
 #### Exercise `unstuck` (recommended)
 
 Provide proofs of the three postulates, `unstuck`, `preserves`, and `wttdgs` above.
 
-```
--- Your code goes here
-```
 
 ## Reduction is deterministic
 
