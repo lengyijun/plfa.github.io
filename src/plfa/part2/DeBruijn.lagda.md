@@ -478,6 +478,11 @@ plus = μ ƛ ƛ (case (# 1) (# 0) (`suc (# 3 · # 0 · # 1)))
 
 2+2 : ∀ {Γ} → Γ ⊢ `ℕ
 2+2 = plus · two · two
+
+{-
+omega : ∀ {Γ} → Γ ⊢ `ℕ ⇒ `ℕ
+omega = (ƛ # 0 · # 0 ) · (ƛ # 0)
+-}
 ```
 We generalise to arbitrary contexts because later we will give examples
 where `two` appears nested inside binders.
