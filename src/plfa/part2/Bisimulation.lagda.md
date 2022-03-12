@@ -129,6 +129,9 @@ We import our source language from
 Chapter [More](/More/):
 ```
 open import plfa.part2.More
+open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Data.Empty       using (⊥; ⊥-elim)                                                                                                                                                
+open import Data.Unit.Polymorphic using (⊤)
 ```
 
 
@@ -180,7 +183,51 @@ to use a decidable predicate to pick out terms in the domain of `_†`, using
 [proof by reflection](/Decidable/#proof-by-reflection).
 
 ```
--- Your code goes here
+qualify : ∀ {Γ A} → (Γ ⊢ A) →  Set
+qualify (` x) = ⊤
+qualify (ƛ x) = ⊤
+qualify (x · x₁) = ⊤
+qualify `zero = ⊥
+qualify (`suc x) = ⊥
+qualify (case x x₁ x₂) = ⊥
+qualify (μ x) = ⊥
+qualify (con x) = ⊥
+qualify (x `* x₁) = ⊥
+qualify (`let x x₁) = ⊤
+qualify `⟨ x , x₁ ⟩ = ⊥
+qualify (`proj₁ x) = ⊥
+qualify (`proj₂ x) = ⊥
+qualify (case× x x₁) = ⊥
+
+_†  :  ∀ {Γ A} → (x : Γ ⊢ A) -> (Γ ⊢ A)
+(` x) † = ` x
+(ƛ x) † = ƛ (x †)
+(x · x₁) † = (x †) · (x₁ †)
+`zero † = `zero
+(`suc x) † = `suc (x †)
+case x x₁ x₂ † = case (x †) (x₁ †) (x₂ †)
+(μ x) † = μ ( x † )
+con x † = con x
+(x `* x₁) † = (x †) `* (x₁ †)
+`let x x₁ † = (ƛ (x₁ †)) · (x †)
+`⟨ x , x₁ ⟩ † = `⟨  x † , x₁ † ⟩
+`proj₁ x † = `proj₁ (x †)
+`proj₂ x † = `proj₂ (x †)
+case× x x₁ † = case× (x †) (x₁ †)
+
+
+
+jiting : ∀ {Γ A} -> {M N : Γ ⊢ A } -> {qualify M} -> ( M † ) ≡ N -> M ~ N
+jiting {Γ} {A} {` x₁} {.((` x₁) †)} {x} _≡_.refl = ~`
+jiting {Γ} {.(_ ⇒ _)} {ƛ M} {.((ƛ M) †)} {x} _≡_.refl = ~ƛ jiting _≡_.refl
+jiting {Γ} {A} {M · M₁} {.((M · M₁) †)} {x} _≡_.refl = jiting _≡_.refl  ~· jiting _≡_.refl
+jiting {Γ} {A} {`let M M₁} {.(`let M M₁ †)} {x} _≡_.refl = ~let (jiting _≡_.refl) (jiting _≡_.refl)
+
+jiqian : ∀ {Γ A} -> {M N : Γ ⊢ A } -> {qualify M} -> M ~ N -> ( M † ) ≡ N
+jiqian ~` = _≡_.refl
+jiqian (~ƛ x) rewrite jiqian x = _≡_.refl
+jiqian (x ~· x₁) rewrite jiqian x | jiqian x₁ = _≡_.refl
+jiqian (~let x x₁) rewrite jiqian x | jiqian x₁ = _≡_.refl
 ```
 
 
@@ -209,7 +256,14 @@ Show that this also holds in the reverse direction: if `M ~ M†`
 and `Value M†` then `Value M`.
 
 ```
--- Your code goes here
+~val⁻¹ : ∀ {Γ A} {M M† : Γ ⊢ A}
+  → M ~ M†
+  → Value M†
+  → Value M
+~val⁻¹ ~` ()
+~val⁻¹ (~ƛ x) V-ƛ = V-ƛ
+~val⁻¹ (x ~· x₁) ()
+~val⁻¹ (~let x x₁) ()
 ```
 
 
