@@ -521,7 +521,29 @@ Show that we also have a simulation in the other direction, and hence that we ha
 a bisimulation.
 
 ```
--- Your code goes here
+data Leg⁻¹ {Γ A} (M N† : Γ ⊢ A) : Set where
+
+  leg : ∀ {N : Γ ⊢ A}
+    → N ~ N†
+    → M —→ N
+      --------
+    → Leg⁻¹ M N†
+
+sim⁻¹ : ∀ {Γ A} {M M† N† : Γ ⊢ A}
+  → M ~ M†
+  → M† —→ N†
+    ---------
+  → Leg⁻¹  M N†
+sim⁻¹ {Γ} {A} {.(` _)} {.(` _)} {N†} ~` ()
+sim⁻¹ {Γ} {.(_ ⇒ _)} {.(ƛ _)} {.(ƛ _)} {N†} (~ƛ x) ()
+sim⁻¹ {Γ} {A} {.(_ · _)} {.(_ · _)} {.(_ · _)} (x ~· x₁) (ξ-·₁ x₂) with sim⁻¹ x x₂
+sim⁻¹ {Γ} {A} {.(_ · _)} {.(_ · _)} {.(_ · _)} (x ~· x₁) (ξ-·₁ x₂) | leg x₃ x₄ = leg (x₃ ~· x₁) (ξ-·₁ x₄)
+sim⁻¹ {Γ} {A} {.(_ · _)} {.(_ · _)} {.(_ · _)} (x ~· x₁) (ξ-·₂ x₂ x₃) with sim⁻¹ x₁ x₃
+sim⁻¹ {Γ} {A} {.(_ · _)} {.(_ · _)} {.(_ · _)} (x ~· x₁) (ξ-·₂ x₂ x₃) | leg x₄ x₅ = leg (x ~· x₄) (ξ-·₂ (~val⁻¹ x x₂) x₅)
+sim⁻¹ {Γ} {A} {.((ƛ N) · _)} {.((ƛ N†) · _)} {.(N† [ _ ])} (~ƛ_ {N = N} {N†} x ~· x₁) (β-ƛ x₂) = leg (~sub x x₁) (β-ƛ (~val⁻¹ x₁ x₂))
+sim⁻¹ {Γ} {A} {.(`let _ _)} {.((ƛ _) · _)} {.((ƛ _) · _)} (~let x x₁) (ξ-·₂ x₂ x₃) with sim⁻¹ x x₃
+sim⁻¹ {Γ} {A} {.(`let _ _)} {.((ƛ _) · _)} {.((ƛ _) · _)} (~let x x₁) (ξ-·₂ x₂ x₃) | leg x₄ x₅ = leg (~let x₄ x₁ ) ( ξ-let x₅)
+sim⁻¹ {Γ} {A} {.(`let M N)} {.((ƛ N†) · _)} {.(N† [ _ ])} (~let {M = M} {N = N} {N†} x x₁) (β-ƛ x₂) = leg (~sub x₁ x) (  β-let (~val⁻¹ x x₂))
 ```
 
 #### Exercise `products` (practice)
