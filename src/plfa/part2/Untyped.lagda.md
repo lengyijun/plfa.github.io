@@ -400,7 +400,28 @@ normalise completely?  Assume that `β` should not permit reduction
 unless both terms are in normal form.
 
 ```
--- Your code goes here
+data variant-1 : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
+
+  ξ₁ : ∀ {Γ} {L L′ M : Γ ⊢ ★}
+    → variant-1 L L′
+      ----------------
+    → variant-1 (L · M) (L′ · M)
+
+  ξ₂ : ∀ {Γ} {L M M′ : Γ ⊢ ★}
+    → variant-1 M M′
+      ----------------
+    → variant-1 (L · M) (L · M′)
+
+  β : ∀ {Γ} {N : Γ , ★ ⊢ ★} {M : Γ ⊢ ★}
+    -> Normal (ƛ N)
+    -> Normal M
+      ---------------------------------
+    → variant-1 ((ƛ N) · M)  (N [ M ])
+
+  ζ : ∀ {Γ} {N N′ : Γ , ★ ⊢ ★}
+    → variant-1 N N′
+      -----------
+    → variant-1 (ƛ N) (ƛ N′)
 ```
 
 #### Exercise (`variant-2`) (practice)
@@ -411,7 +432,31 @@ permits reduction when both terms are values (that is, lambda
 abstractions).  What would `2+2ᶜ` reduce to in this case?
 
 ```
--- Your code goes here
+data variant-2 : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
+
+  ξ₁ : ∀ {Γ} {L L′ M : Γ ⊢ ★}
+    → variant-2 L L′
+      ----------------
+    → variant-2 (L · M) (L′ · M)
+
+  ξ₂ : ∀ {Γ} {L M M′ : Γ ⊢ ★}
+    → variant-2 M M′
+      ----------------
+    → variant-2 (L · M) (L · M′)
+
+  β : ∀ {Γ} {N M : Γ , ★ ⊢ ★}
+      ---------------------------------
+    → variant-2 ((ƛ N) · (ƛ M))  (N [ ƛ M ])
+
+  ζ : ∀ {Γ} {N N′ : Γ , ★ ⊢ ★}
+    → variant-2 N N′
+      -----------
+    → variant-2 (ƛ N) (ƛ N′)
+
+2+2ᶜvariant-2 : variant-2 2+2ᶜ ((((ƛ (ƛ (ƛ (# 3) · (# 1) · ((# 2) · (# 1) · (# 0))))) [
+  ƛ (ƛ (# 1) · ((# 1) · (# 0))) ])
+ · twoᶜ))
+2+2ᶜvariant-2 =  ξ₁ β
 ```
 
 
@@ -752,7 +797,11 @@ Use the evaluator to confirm that `plus · two · two` and `four`
 normalise to the same term.
 
 ```
--- Your code goes here
+{-
+C-c C-n `eval (gas 100) (plus · two · two)` 
+C-c C-n `eval (gas 100) four`
+compare the result
+-}
 ```
 
 #### Exercise `multiplication-untyped` (recommended)
@@ -763,7 +812,13 @@ representation and the encoding of the fixpoint operator.
 Confirm that two times two is four.
 
 ```
--- Your code goes here
+mul :  ∀ {Γ} → Γ ⊢ ★
+mul = μ ƛ ƛ case (# 1) (# 0) (plus · (# 0) · ((# 3) · (# 0) · (# 1)))
+
+{-
+ eval (gas 100) (mul · two · two)
+ eval (gas 100) four
+-}
 ```
 
 #### Exercise `encode-more` (stretch)
