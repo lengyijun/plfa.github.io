@@ -477,7 +477,19 @@ Rewrite your definition of multiplication from
 Chapter [Lambda](/Lambda/), decorated to support inference.
 
 ```
--- Your code goes here
+mul : Term⁺
+mul = (μ "*" ⇒ (ƛ "x" ⇒ (ƛ "y" ⇒ `case  ` "x" [zero⇒ `zero |suc "x" ⇒ plus · (` "x"  ↑ ) · ( ` "y" ↑  ) ↑   ])))  ↓ `ℕ ⇒ `ℕ ⇒ `ℕ
+
+mul1 : Term⁻
+mul1 = (μ "*" ⇒ (ƛ "x" ⇒ (ƛ "y" ⇒ `case  ` "x" [zero⇒ `zero |suc "x" ⇒ plus · (` "x"  ↑ ) · ( ` "y" ↑  ) ↑   ])))
+
+plus1 : Term⁻
+plus1 = (μ "p" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+          `case (` "m") [zero⇒ ` "n" ↑
+                        |suc "m" ⇒ `suc (` "p" · (` "m" ↑) · (` "n" ↑) ↑) ])
+
+_ :  ∀ {Γ} ->  Γ ⊢ plus1 ↓  `ℕ ⇒ `ℕ ⇒ `ℕ
+_  = ⊢μ (⊢ƛ (⊢ƛ (⊢case (⊢` (S (λ { () } ) Z)) (⊢↑ (⊢` Z) refl) (⊢suc (⊢↑ (((⊢` (S (λ { () } ) (S (λ { () } ) (S (λ { () } ) Z)))) · ⊢↑ (⊢` Z) refl) · ⊢↑ (⊢` (S (λ { () } ) Z)) refl) refl)))))
 ```
 
 
