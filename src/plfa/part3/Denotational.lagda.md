@@ -502,7 +502,8 @@ such that `∅ ⊢ plusᶜ ↓ v`. Also, give the proof of `∅ ⊢ plusᶜ ↓ 
 for your choice of `v`.
 
 ```
--- Your code goes here
+denot-plusᶜ : ∀ {a b c d : Value} -> `∅ ⊢ plfa.part2.Untyped.plusᶜ ↓ ((a ↦ b) ↦ c ↦ d) ↦ ((a ↦ b) ↦ a ↦ c) ↦ (a ↦ b) ↦ a ↦ d
+denot-plusᶜ = ↦-intro (↦-intro  (↦-intro  (↦-intro (↦-elim (↦-elim  var var) (↦-elim (↦-elim  var var) var)))))
 ```
 
 
